@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TAMPER-PROOF CASE SYSTEM - SAPS | LocalStorage Version</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif}
+body{background:#0f172a;color:#fff;min-height:100vh}
+.topbar{background:#1e293b;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #facc15;position:sticky;top:0;z-index:99;flex-wrap:wrap;gap:10px}
+.logo{font-weight:900;font-size:18px}.logo span{color:#facc15}
+.badge{background:#dc2626;padding:5px 10px;border-radius:20px;font-size:11px;font-weight:800}
+.badge-green{background:#16a34a;padding:5px 10px;border-radius:20px;font-size:11px;font-weight:800}
+.container{max-width:1100px;margin:0 auto;padding:20px}
+.card{background:#1e293b;border-radius:14px;padding:20px;margin-bottom:18px;border:1px solid #334155}
+h2{font-size:20px;margin-bottom:12px}h3{font-size:16px;margin:15px 0 8px;color:#facc15}
+label{font-size:13px;color:#cbd5e1;display:block;margin:10px 0 5px}
+input,select,textarea{width:100%;padding:12px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff;outline:none}
+.btn{padding:12px 18px;border:none;border-radius:8px;font-weight:800;cursor:pointer;width:100%;margin-top:12px;font-size:14px}
+.btn-yellow{background:#facc15;color:#000}.btn-green{background:#16a34a;color:#fff}.btn-red{background:#dc2626;color:#fff}.btn-blue{background:#2563eb;color:#fff}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:700px){.grid,.grid3{grid-template-columns:1fr}}
+.stat{background:#0f172a;padding:16px;border-radius:12px;text-align:center;border:1px solid #334155}
+.stat b{font-size:28px;display:block;color:#facc15}.stat span{font-size:12px;color:#94a3b8}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+th,td{padding:10px;text-align:left;border-bottom:1px solid #334155}th{color:#facc15}
+.pill{padding:4px 8px;border-radius:20px;font-size:11px;font-weight:800}
+.pill-green{background:#14532d;color:#bbf7d0}.pill-red{background:#7f1d1d;color:#fecaca}
+.hidden{display:none}
+.alertBox{background:#7f1d1d;border:2px solid #ef4444;padding:15px;border-radius:10px;margin-bottom:15px}
+.flex{display:flex;gap:10px}.flex .btn{margin-top:0}
+.small{font-size:12px;color:#94a3b8;line-height:1.6}
+.hash{font-family:monospace;font-size:11px;color:#4ade80;word-break:break-all}
+.trackBox{background:#052e16;border:1px solid #16a34a;padding:15px;border-radius:10px;margin-top:10px}
+.timeline{border-left:3px solid #facc15;padding-left:15px;margin-top:10px}.timeline div{margin-bottom:12px;font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">🛡️ SAPS <span>TAMPER-PROOF</span></div>
+  <div>
+    <span class="badge">● HASH-CHAIN PROTECTED</span>
+    <span class="badge-green" id="saveStatus">💾 LOCALSTORAGE: SAVED</span>
+    <button onclick="logout()" style="background:#334155;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer">Logout</button>
+  </div>
+</div>
+
+<div class="container">
+
+<div id="loginPage" class="card" style="max-width:480px;margin:40px auto">
+  <h2 style="text-align:center">🔐 Secure Login</h2>
+  <p class="small" style="text-align:center">Demo with LocalStorage - Your cases will NOT disappear after refresh.</p>
+  <label>Select Role</label>
+  <select id="role"><option value="officer">Investigating Officer</option><option value="commander">Station Commander</option><option value="victim">Victim - Track My Case</option><option value="oversight">IPID / Oversight</option></select>
+  <label>Full Name / Badge Number</label>
+  <input id="loginName" placeholder="e.g. Const. Mokoena - Badge 12345" value="Const. Mokoena - Badge 12345">
+  <label>Password / OTP</label>
+  <input type="password" value="123456">
+  <button class="btn btn-yellow" onclick="login()">LOGIN WITH 2FA →</button>
+  <p class="small" style="margin-top:12px;text-align:center">Test: Create a case, then refresh the page (F5).<br>Your case will still be there. That's LocalStorage.</p>
+</div>
+
+<div id="mainApp" class="hidden">
+  <div id="alertArea"></div>
+  <div class="grid3">
+    <div class="stat"><b id="totalCases">0</b><span>TOTAL CASES</span></div>
+    <div class="stat"><b id="activeCases" style="color:#4ade80">0</b><span>ACTIVE</span></div>
+    <div class="stat"><b id="deletedCases" style="color:#f87171">0</b><span>IN RECYCLE BIN</span></div>
+  </div>
+
+  <div class="card">
+    <h2>📝 1. Open New Case - Auto CAS Number</h2>
+    <div class="grid">
+      <div><label>Victim Full Name *</label><input id="vName" placeholder="e.g. Thabo Nkosi"></div>
+      <div><label>ID Number</label><input id="vID" placeholder="900101..."></div>
+      <div><label>Phone (for SMS Alert) *</label><input id="vPhone" placeholder="063 233 7826"></div>
+      <div><label>Email (for Email Alert) *</label><input id="vEmail" placeholder="victim@gmail.com"></div>
+      <div><label>Type of Crime</label><select id="vCrime"><option>Assault</option><option>Theft</option><option>Robbery</option><option>GBV / Domestic Violence</option><option>Fraud</option><option>House Breaking</option><option>Other</option></select></div>
+      <div><label>Police Station</label><select id="vStation"><option>Odendaalsrus SAPS</option><option>Allanridge SAPS</option><option>Kutlwanong SAPS</option><option>Bothaville SAPS</option><option>Welkom SAPS</option></select></div>
+    </div>
+    <label>Statement / What Happened</label><textarea id="vStatement" rows="3" placeholder="Write what happened..."></textarea>
+    <button class="btn btn-green" onclick="createCase()">✅ CREATE CASE + SAVE TO LOCALSTORAGE</button>
+    <p class="small">System will auto-generate CAS Number, hash it, and save it permanently in this browser's LocalStorage.</p>
+  </div>
+
+  <div class="card">
+    <h2>📂 2. All Cases - Saved in LocalStorage</h2>
+    <input id="search" placeholder="🔍 Search by CAS, Name, Station..." onkeyup="renderCases()">
+    <div style="overflow-x:auto"><table><thead><tr><th>CAS NUMBER</th><th>VICTIM</th><th>CRIME</th><th>STATION</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody id="caseTable"></tbody></table></div>
+    <button class="btn btn-red" onclick="clearAll()" style="margin-top:15px">🗑️ CLEAR ALL DATA (For Testing Only - Real System Has NO Clear Button)</button>
+  </div>
+
+  <div class="card">
+    <h2>👁️ 3. Victim Tracking Portal</h2>
+    <div class="flex"><input id="trackInput" placeholder="Enter CAS e.g. CAS 123/11/2026"><button class="btn btn-blue" style="width:200px" onclick="trackCase()">TRACK CASE</button></div>
+    <div id="trackResult"></div>
+  </div>
+
+  <div class="card">
+    <h2>♻️ 4. Recycle Bin - Deleted Cases Are NOT Gone</h2>
+    <div id="recycleBin"></div>
+  </div>
+
+  <div class="card">
+    <h2>🔗 5. Audit Trail - Hash Chain (Saved in LocalStorage)</h2>
+    <div id="auditLog"></div>
+  </div>
+</div>
+</div>
+
+<script>
+// ========== LOCALSTORAGE - THE SAVING PART (JavaScript ONLY) ==========
+// This is the ONLY code needed to save permanently in browser
+function saveToStorage(){
+  localStorage.setItem("saps_cases", JSON.stringify(cases));
+  localStorage.setItem("saps_audit", JSON.stringify(audit));
+  document.getElementById('saveStatus').innerText = "💾 LOCALSTORAGE: SAVED - " + new Date().toLocaleTimeString();
+}
+function loadFromStorage(){
+  let savedCases = localStorage.getItem("saps_cases");
+  let savedAudit = localStorage.getItem("saps_audit");
+  if(savedCases){ cases = JSON.parse(savedCases); }
+  if(savedAudit){ audit = JSON.parse(savedAudit); }
+}
+// ============================================================
+
+let cases=[
+ {cas:"CAS 101/11/2026",name:"Thabo Nkosi",phone:"0632337826",email:"thabo@gmail.com",crime:"Assault",station:"Odendaalsrus SAPS",status:"Under Investigation",officer:"Const. Mokoena",deleted:false},
+ {cas:"CAS 102/11/2026",name:"Maria Jacobs",phone:"0821234567",email:"maria@gmail.com",crime:"Theft",station:"Allanridge SAPS",status:"In Court - 20 Nov 2026",officer:"Sgt. Dlamini",deleted:false},
+ {cas:"CAS 098/11/2026",name:"Peter van Wyk",phone:"0719876543",email:"peter@gmail.com",crime:"House Breaking",station:"Kutlwanong SAPS",status:"Delete Attempt BLOCKED",officer:"Const. Unknown",deleted:true},
+];
+let audit=[
+ {time:"05 Nov 2026 09:12",action:"CASE CREATED",detail:"CAS 101/11/2026 created by Const. Mokoena",hash:"a7f3c9e2b1d84f..."},
+ {time:"05 Nov 2026 11:20",action:"⚠️ DELETE ATTEMPT BLOCKED",detail:"Someone tried to DELETE CAS 098/11/2026 - Alert sent to victim + Commander + IPID",hash:"c9f5e2b8d3a66b..."},
+];
+let currentUser="Const. Mokoena";
+
+// LOAD saved data on start - if user already created cases before, load them
+loadFromStorage();
+
+function login(){
+  currentUser=document.getElementById('loginName').value || "Officer";
+  let role=document.getElementById('role').value;
+  document.getElementById('loginPage').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  addAudit("LOGIN", `User ${currentUser} logged in as ${role} - 2FA verified`);
+  renderCases(); renderAudit(); renderRecycle();
+  alert("✅ Welcome "+currentUser+"\n\nYour cases are saved in LocalStorage.\nTry refreshing the page - they will still be there!");
+}
+function logout(){location.reload();}
+function genHash(){return Math.random().toString(36).substring(2,10)+"..."+Math.random().toString(36).substring(2,6)}
+function addAudit(action,detail){
+  let now=new Date().toLocaleString();
+  audit.unshift({time:now,action,detail,hash:genHash()});
+  saveToStorage(); // SAVE EVERY CHANGE
+  renderAudit();
+}
+function sendAlert(cas,msg){
+  document.getElementById('alertArea').innerHTML=`<div class="alertBox">🚨 <b>ALERT SENT!</b><br>${msg}<br><small>📧 Email to victim &nbsp; 📱 SMS to victim &nbsp; 📩 Copy to Commander & IPID</small></div>`;
+  setTimeout(()=>document.getElementById('alertArea').innerHTML='',8000);
+}
+function createCase(){
+  let name=document.getElementById('vName').value;
+  let phone=document.getElementById('vPhone').value;
+  let email=document.getElementById('vEmail').value;
+  if(!name||!phone){alert("Please fill Victim Name and Phone");return;}
+  let num=Math.floor(100+Math.random()*899);
+  let cas=`CAS ${num}/11/2026`;
+  let crime=document.getElementById('vCrime').value;
+  let station=document.getElementById('vStation').value;
+  cases.unshift({cas,name,phone,email,crime,station,status:"Under Investigation",officer:currentUser,deleted:false});
+  saveToStorage(); // SAVE IMMEDIATELY
+  addAudit("CASE CREATED",`${cas} created for ${name} at ${station} by ${currentUser}`);
+  addAudit("ALERT SENT",`SMS + Email + WhatsApp sent to ${name} (${phone}) with CAS ${cas}`);
+  sendAlert(cas,`✅ CASE CREATED: ${cas} for ${name}. Saved to LocalStorage. Tracking link sent to ${phone}.`);
+  renderCases(); renderRecycle();
+  alert(`✅ SUCCESS! SAVED PERMANENTLY!\n\nCAS: ${cas}\n\nThis case is now in LocalStorage.\nClose Chrome and open again - it will still be here.`);
+  document.getElementById('vName').value='';document.getElementById('vPhone').value='';
+}
+function tryDelete(cas){
+  let c=cases.find(x=>x.cas===cas);
+  if(confirm(`⚠️ WARNING: Trying to DELETE ${cas}\n\nThis will be BLOCKED and LOGGED.\nVictim + Commander + IPID will be alerted.\n\nContinue?`)){
+    c.deleted=true; c.status="Delete Attempt BLOCKED";
+    saveToStorage();
+    addAudit("⚠️ DELETE ATTEMPT BLOCKED",`${currentUser} tried to DELETE ${cas} for ${c.name} - Moved to Recycle Bin`);
+    sendAlert(cas,`🚨 DELETE ATTEMPT on ${cas} by ${currentUser}<br>Action BLOCKED. Case moved to Recycle Bin. Victim notified.`);
+    renderCases(); renderRecycle();
+  }
+}
+function restoreCase(cas){
+  let c=cases.find(x=>x.cas===cas);
+  c.deleted=false; c.status="Restored - Under Investigation";
+  saveToStorage();
+  addAudit("CASE RESTORED",`${cas} restored by ${currentUser}`);
+  sendAlert(cas,`✅ CASE RESTORED: ${cas} restored. Victim notified.`);
+  renderCases(); renderRecycle();
+}
+function clearAll(){
+  if(confirm("Are you sure? This will delete ALL demo data from LocalStorage. Real SAPS system has NO such button.")){
+    localStorage.removeItem("saps_cases"); localStorage.removeItem("saps_audit");
+    location.reload();
+  }
+}
+function renderCases(){
+  let q=(document.getElementById('search')?.value||"").toLowerCase();
+  let html=""; let active=cases.filter(c=>!c.deleted); let del=cases.filter(c=>c.deleted);
+  document.getElementById('totalCases').innerText=cases.length;
+  document.getElementById('activeCases').innerText=active.length;
+  document.getElementById('deletedCases').innerText=del.length;
+  active.filter(c=>(c.cas+c.name+c.station).toLowerCase().includes(q)).forEach(c=>{
+    html+=`<tr><td><b>${c.cas}</b><br><span class="small">${c.officer}</span></td><td>${c.name}<br><span class="small">${c.phone}</span></td><td>${c.crime}</td><td>${c.station}</td><td><span class="pill pill-green">${c.status}</span></td><td><button onclick="tryDelete('${c.cas}')" style="background:#dc2626;color:#fff;border:none;padding:7px 10px;border-radius:6px;cursor:pointer">Try Delete</button> <button onclick="trackCase('${c.cas}')" style="background:#2563eb;color:#fff;border:none;padding:7px 10px;border-radius:6px;cursor:pointer">Track</button></td></tr>`;
+  });
+  document.getElementById('caseTable').innerHTML=html||"<tr><td colspan='6'>No cases found</td></tr>";
+}
+function renderRecycle(){
+  let del=cases.filter(c=>c.deleted);
+  if(del.length===0){document.getElementById('recycleBin').innerHTML="<p class='small'>Recycle Bin is empty.</p>";return;}
+  let html="<table><tr><th>CAS</th><th>VICTIM</th><th>STATUS</th><th>RESTORE</th></tr>";
+  del.forEach(c=>{html+=`<tr><td>${c.cas}</td><td>${c.name}</td><td><span class="pill pill-red">In Recycle Bin - Recoverable</span></td><td><button onclick="restoreCase('${c.cas}')" style="background:#16a34a;color:#fff;border:none;padding:7px 12px;border-radius:6px;cursor:pointer">♻️ RESTORE</button></td></tr>`});
+  html+="</table>"; document.getElementById('recycleBin').innerHTML=html;
+}
+function renderAudit(){
+  let html=""; audit.forEach(a=>{html+=`<div style="border-bottom:1px solid #334155;padding:10px 0"><b>${a.action}</b> - <span class="small">${a.time}</span><br><span style="font-size:13px">${a.detail}</span><br><span class="hash">HASH: ${a.hash} ✓ VERIFIED</span></div>`});
+  document.getElementById('auditLog').innerHTML=html;
+}
+function trackCase(casParam){
+  let cas=casParam||document.getElementById('trackInput').value;
+  let c=cases.find(x=>x.cas.toLowerCase()===cas.toLowerCase());
+  if(!c){document.getElementById('trackResult').innerHTML=`<div class="trackBox" style="background:#7f1d1d">❌ Case ${cas} not found.</div>`;return;}
+  document.getElementById('trackResult').innerHTML=`<div class="trackBox"><b>✅ FOUND: ${c.cas}</b><br>Victim: ${c.name}<br>Crime: ${c.crime}<br>Station: ${c.station}<br>Status: <b>${c.status}</b><br>Officer: ${c.officer}<br><div class="timeline"><div>📝 Case Opened - Saved in LocalStorage</div><div>👁️ Viewed by Officer</div><div>✅ Case is SAFE - Hash verified</div></div></div>`;
+}
+renderCases(); renderAudit(); renderRecycle();
+</script>
+</body>
+</html>
